@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  RECEPCIONISTA
+  CHOFER
+}
+
+enum EstadoTraslado {
+  PENDIENTE
+  CONFIRMADO
+  CANCELADO
+  EXPIRADO
+}
+
+enum DiaSemana {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
+model Centro {
+  id        String     @id @default(cuid())
+  nombre    String     @unique
+  usuarios  Usuario[]
+  pacientes Paciente[]
+  traslados Traslado[]
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nombre    String
+  fotoUrl   String?
+  rol       Role
+  centroId  String?
+  centro    Centro?  @relation(fields: [centroId], references: [id])
+  chofer    Chofer?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chofer {
+  id                  String   @id @default(cuid())
+  usuarioId           String   @unique
+  usuario             Usuario  @relation(fields: [usuarioId], references: [id])
+  licencia            String?
+  vehiculoPlaca       String?
+  telefonoAlternativo String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  pacientesAsignados Paciente[] @relation("PacienteChoferIda")
+  pacientesVuelta    Paciente[] @relation("PacienteChoferVuelta")
+  trasladosIda       Traslado[] @relation("ChoferIda")
+  trasladosVuelta    Traslado[] @relation("ChoferVuelta")
+}
+
+model Paciente {
+  id                    String   @id @default(cuid())
+  nombre                String
+  direccion             String
+  telefono              String
+  activo                Boolean  @default(true)
+  requiereSillaDeRuedas Boolean  @default(false)
+  observacion           String?
+  duracionEstimadaMin   Int      @default(45)
+
+  centroId         String
+  centro           Centro   @relation(fields: [centroId], references: [id])
+  choferAsignadoId String?
+  choferAsignado   Chofer?  @relation("PacienteChoferIda", fields: [choferAsignadoId], references: [id])
+  choferVueltaId   String?
+  choferVuelta     Chofer?  @relation("PacienteChoferVuelta", fields: [choferVueltaId], references: [id])
+
+  horarios  PacienteHorario[]
+  citas     PacienteCita[]
+  traslados Traslado[]
+  eventos   Evento[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Horario recurrente — un día de la semana con su hora de turno
+model PacienteHorario {
+  id         String    @id @default(cuid())
+  pacienteId String
+  paciente   Paciente  @relation(fields: [pacienteId], references: [id])
+  dia        DiaSemana
+  horaCita   String
+
+  @@unique([pacienteId, dia])
+}
+
+/// Cita concreta — excepción puntual para una fecha específica
+model PacienteCita {
+  id         String   @id @default(cuid())
+  pacienteId String
+  paciente   Paciente @relation(fields: [pacienteId], references: [id])
+  fecha      DateTime
+  horaCita   String
+  createdAt  DateTime @default(now())
+
+  @@unique([pacienteId, fecha])
+}
+
+/// Traslado del día — un horario de turno único, con chofer de ida y, opcionalmente, de vuelta
+model Traslado {
+  id       String         @id @default(cuid())
+  codigo   String         @unique
+  fecha    DateTime
+  horaCita String
+  estado   EstadoTraslado @default(PENDIENTE)
+
+  /// El paciente no necesita que lo lleven al centro (ej: lo lleva la familia) pero sí que lo traigan de vuelta, o viceversa
+  idaCancelada    Boolean @default(false)
+  vueltaCancelada Boolean @default(false)
+
+  choferId        String
+  chofer          Chofer  @relation("ChoferIda", fields: [choferId], references: [id])
+  choferRegresoId String?
+  choferRegreso   Chofer? @relation("ChoferVuelta", fields: [choferRegresoId], references: [id])
+
+  pacienteId String
+  paciente   Paciente @relation(fields: [pacienteId], references: [id])
+
+  centroDestinoId String
+  centroDestino   Centro @relation(fields: [centroDestinoId], references: [id])
+
+  observacion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  eventos Evento[]
+
+  @@unique([pacienteId, fecha])
+  @@index([fecha])
+  @@index([estado])
+  @@index([choferId, fecha])
+}
+
+/// Log de actividad del sistema: cambios de horario, cancelaciones, creación de traslados, etc.
+model Evento {
+  id            String   @id @default(cuid())
+  mensaje       String
+  usuarioNombre String?
+
+  pacienteId String?
+  paciente   Paciente? @relation(fields: [pacienteId], references: [id])
+  trasladoId String?
+  traslado   Traslado? @relation(fields: [trasladoId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
