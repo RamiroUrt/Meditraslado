@@ -14,7 +14,6 @@ Este proyecto es un **rediseño completo desde cero** de una versión anterior (
 - **lucide-react** para íconos
 - CSS plano, **todo unificado en un solo archivo**: `src/styles/global.css` (decisión explícita del usuario — no hay CSS colocado por componente)
 
-> ⚠️ Este proyecto usa versiones muy recientes (Next 16, Prisma 7, NextAuth v5 beta) que tienen cambios importantes respecto a lo que la mayoría de la documentación/entrenamiento de IA conoce. `AGENTS.md` en la raíz lo advierte explícitamente. Antes de asumir cómo funciona algo (middleware, generación de Prisma Client, config de NextAuth), conviene revisar `node_modules/next/dist/docs/` o buscar la doc oficial actualizada.
 
 ---
 
@@ -111,29 +110,8 @@ ROADMAP.md                ← hoja de ruta detallada por etapas (leer esto para 
 
 - **Lógica de negocio** (Etapa 1, paso 5): generación automática de traslados diarios a partir del horario semanal del paciente, expiración automática, cancelación por tramo.
 - **WhatsApp real** (Etapa 2): hoy el modal de WhatsApp arma el mensaje y "simula" el envío — falta integrar Meta Cloud API de verdad (enviar, webhook de respuestas, cron de recordatorios).
-- **Restricción de páginas por rol**: hoy cualquier usuario logueado (sea ADMIN, RECEPCIONISTA o CHOFER) ve todo. Está pensado para la Etapa 3 (vista simplificada para choferes).
-- **Historial real**: el panel de "Historial del Sistema" en el dashboard sigue siendo un placeholder vacío.
-- **Crear/eliminar pacientes**: no hay UI para eso todavía, solo editar los que ya existen.
 - Reportes/exportación, multi-tenant — futuro lejano (Etapas 3-4).
 
 ---
 
-## Resumen de la sesión que armó todo esto (para dar contexto a un chat nuevo)
 
-Si estás retomando este proyecto en una conversación nueva, esto es lo que pasó, en orden:
-
-1. Arranqué el proyecto de cero en esta carpeta (estaba vacía), usando como referencia dos MD que el usuario tenía en `Desktop/Meditraslado(claude)/` (contexto de negocio y sistema de diseño original, dark/"centro de comando") y un logo con gradiente de marca.
-2. Construí un primer frontend fiel a ese design doc (dark mode, mono/uppercase, estilo terminal).
-3. El usuario pidió modo claro → lo agregué con toggle persistente.
-4. El usuario mostró una captura de una versión **anterior suya** (más parecida a `meditraslado-demo`, look claro/redondeado) y pidió replicar **todo** ese estilo → hice un reskin completo (abandonando el look "terminal"), agregué íconos reales (lucide-react) en vez de emojis, y reubiqué los paneles de Pacientes/Historial.
-5. Varias iteraciones de ajuste fino: tamaños de paneles, que la cola y el detalle no tuvieran scroll de página (sidebar/header fijos, solo scroll interno donde hace falta), badges de días de atención, combinar "días" + "hora de cita" en una sola sección.
-6. El usuario notó que "hora de salida y vuelta" era confuso → simplifiqué el modelo a **un solo horario de turno** por traslado (mantuve chofer ida/vuelta, pero sin duplicar horas ni estados).
-7. Le di funcionalidad real al botón "Modificar" (antes solo estaba en Pacientes) y conecté todo para que los cambios de un paciente se reflejen de forma consistente en el dashboard.
-8. El usuario pidió unificar **todo** el CSS del proyecto en un solo archivo (`global/style/global.css`) — se hizo, eliminando ~19 archivos `.css` colocados por componente.
-9. Preguntó cuánto faltaba → le armé un `ROADMAP.md` con las etapas (Backend/Auth → WhatsApp → Reportes/Chofer → Multi-tenant).
-10. **Backend real**: el usuario pasó su schema de Prisma y seed de una versión anterior como referencia. Los adapté (camelCase, sin duplicar campos entre Paciente/Traslado, sin `estado_regreso` separado). Se armó una cuenta de Supabase (el usuario ya la tenía), encontramos que la base ya tenía tablas de la app vieja, el usuario confirmó que era un proyecto de prueba y se reseteó (con doble confirmación de seguridad — tanto Prisma como el harness de Claude Code bloquean resets de DB automáticos). Prisma 7 resultó tener una config completamente distinta a la que yo conocía (`prisma.config.ts`, sin `url` en el schema, generator `prisma-client` en vez de `prisma-client-js`) — lo investigué en la doc oficial antes de escribir nada.
-11. **Auth real**: NextAuth v5 con Credentials + bcrypt. Investigué que Next.js 16 renombró `middleware.ts` a `proxy.ts` (mismo comportamiento, corre en Node.js runtime — confirmado en la doc local del proyecto). Reestructuré las rutas en un route group `(app)` para que `/login` no tenga sidebar/header.
-12. **Conecté el frontend a la API real**: construí las API routes (`/api/pacientes`, `/api/traslados`, `/api/centros`, `/api/choferes`) siguiendo el mismo patrón que ya usaba `meditraslado-demo`, renombré `lib/mock-data.ts` → `lib/types.ts` + `lib/api-client.ts`, y conecté Dashboard/Pacientes/modales. Verificado que las ediciones persisten en la base real (no solo en memoria).
-13. Agregué la card de "Expirados" a las stats y rediseñé el layout: la card de Pacientes queda grande a la izquierda, las otras 4 (Confirmados/Pendientes/Cancelados/Expirados) chicas a la derecha.
-
-**Próximo paso lógico**: paso 5 de la Etapa 1 (generación automática de traslados + expiración automática + cancelación por tramo), o directamente Etapa 2 (WhatsApp real) si se prefiere saltear la automatización por ahora.
