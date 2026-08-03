@@ -12,7 +12,7 @@ Este proyecto es un **rediseño completo desde cero** de una versión anterior (
 - **Prisma 7** + **PostgreSQL (Supabase)** — nótese que Prisma 7 cambió su forma de configurarse respecto a versiones anteriores (ver `prisma.config.ts`, sin `url`/`directUrl` en el schema)
 - **NextAuth v5** (`next-auth@beta`) — Credentials provider, JWT, roles
 - **lucide-react** para íconos
-- CSS plano, **todo unificado en un solo archivo**: `global/style/global.css` (decisión explícita del usuario — no hay CSS colocado por componente)
+- CSS plano, **todo unificado en un solo archivo**: `src/styles/global.css` (decisión explícita del usuario — no hay CSS colocado por componente)
 
 > ⚠️ Este proyecto usa versiones muy recientes (Next 16, Prisma 7, NextAuth v5 beta) que tienen cambios importantes respecto a lo que la mayoría de la documentación/entrenamiento de IA conoce. `AGENTS.md` en la raíz lo advierte explícitamente. Antes de asumir cómo funciona algo (middleware, generación de Prisma Client, config de NextAuth), conviene revisar `node_modules/next/dist/docs/` o buscar la doc oficial actualizada.
 
@@ -41,30 +41,50 @@ Para resetear/recrear los datos de prueba: `npx prisma db seed` (ver `prisma/see
 
 ## Estructura relevante
 
+Todo el código de la app vive en `src/` (salvo `prisma/`, `public/` y los archivos de config, que quedan en la raíz). Cada componente tiene su propia carpeta con su nombre; no hay `index.ts` de re-export.
+
 ```
-app/
-  layout.tsx              ← root layout: fuentes, script anti-flash de tema, SessionProvider (sin sidebar/header)
-  page.tsx                ← redirige a /dashboard
-  login/page.tsx          ← página de login (fuera del route group, sin chrome)
-  (app)/                  ← route group: todo lo que SÍ tiene sidebar/header
-    layout.tsx            ← Sidebar + Header
-    dashboard/page.tsx
-    patients/page.tsx
-    transfers/ history/ settings/  ← placeholders "Próximamente"
-  api/
-    auth/[...nextauth]/route.ts
-    pacientes/route.ts (GET) + [id]/route.ts (PATCH)
-    traslados/route.ts (GET, filtra por hoy)
-    centros/route.ts, choferes/route.ts (GET)
+src/
+  app/
+    layout.tsx              ← root layout: fuentes, script anti-flash de tema, <AppProviders> (sin sidebar/header)
+    page.tsx                ← redirige a /dashboard
+    login/page.tsx          ← página de login (fuera del route group, sin chrome)
+    (app)/                  ← route group: todo lo que SÍ tiene sidebar/header
+      layout.tsx            ← <AppShell> (Sidebar + Header + drawer mobile)
+      dashboard/ patients/ transfers/ history/ settings/ calendar/  ← page.tsx de cada sección
+    api/
+      auth/[...nextauth]/route.ts
+      pacientes/route.ts (GET/POST) + [id]/route.ts (PATCH/DELETE)
+      traslados/route.ts (GET/POST) + [id]/route.ts (PATCH)
+      centros/route.ts, choferes/route.ts, eventos/route.ts (GET)
+      whatsapp/send/route.ts (POST), whatsapp/webhook/route.ts (GET verificación, POST respuestas)
 
-auth.ts                   ← config de NextAuth (Credentials + bcrypt + Prisma)
-proxy.ts                  ← reemplaza middleware.ts (Next 16 lo renombró) — protege rutas, redirige a /login
+  proxy.ts                  ← reemplaza middleware.ts (Next 16 lo renombró) — Next.js exige que esté en la raíz de src/, protege rutas y redirige a /login
 
-lib/
-  prisma.ts               ← singleton de PrismaClient (driver adapter @prisma/adapter-pg)
-  session.ts              ← requireSessionUser() para las API routes
-  types.ts                ← tipos compartidos (Paciente, Traslado, Centro, Chofer, etc.) — YA NO hay mock data acá
-  api-client.ts           ← fetch wrappers tipados que usa el frontend (fetchPacientes, updatePaciente, etc.)
+  lib/
+    auth.ts                 ← config de NextAuth (Credentials + bcrypt + Prisma)
+    prisma.ts               ← singleton de PrismaClient (driver adapter @prisma/adapter-pg)
+    session.ts              ← requireSessionUser() para las API routes
+    api-client.ts           ← fetch wrappers tipados que usa el frontend
+    traslados.ts, eventos.ts, whatsapp.ts, useFotoPerfil.ts
+
+  providers/
+    AppProviders.tsx        ← envuelve <SessionProvider> (y futuros providers)
+
+  types/                    ← todos los tipos centralizados acá, agrupados por área
+    models.ts               ← Paciente, Traslado, Centro, Chofer, DiaSemana, EstadoTraslado, Evento
+    ui.ts, layout.ts, dashboard.ts, modals.ts, calendar.ts   ← Props de cada grupo de componentes
+    next-auth.d.ts          ← augmentation de tipos para session.user.rol
+
+  components/
+    ui/                     ← un átomo por carpeta: Badge/, Button/, Modal/, Input/, Select/, Textarea/, Label/, Checkbox/, Spinner/, Loader/
+    layout/                 ← AppShell/, Header/, Sidebar/ (una carpeta por componente)
+    modals/                 ← PatientsModal/, TrasladoModal/, WhatsAppModal/ (una carpeta por componente)
+    Dashboard/              ← StatsCards, TransferList, TransferDetail, PatientsPanel, HistoryPanel (grupo, archivos sueltos)
+    Calendar/                ← WeeklyScheduleGrid (único archivo del grupo)
+
+  styles/global.css          ← TODO el CSS del proyecto vive acá
+  assets/images/logo.png
 
 prisma/
   schema.prisma           ← Usuario, Centro, Chofer, Paciente, PacienteHorario, PacienteCita, Traslado, Evento
@@ -72,14 +92,6 @@ prisma/
   seed.ts                 ← ~60 pacientes de ejemplo repartidos en los 4 centros (~70% con chofer asignado,
                              el resto tiene su turno fijo pero sin chofer — no generan traslados automáticos)
 
-components/
-  ui/                     ← átomos: Badge, Button, Modal, Input, Label, Checkbox, Spinner, Loader
-  layout/                 ← AppShell (estado del drawer mobile), Sidebar, Header (ya conectados a la sesión real)
-  Dashboard/              ← StatsCards, TransferList, TransferDetail, PatientsPanel, HistoryPanel
-  modals/                 ← PatientsModal (edición real), WhatsAppModal (plantillas, envío simulado)
-
-global/style/global.css   ← TODO el CSS del proyecto vive acá
-types/next-auth.d.ts      ← augmentation de tipos para session.user.rol
 ROADMAP.md                ← hoja de ruta detallada por etapas (leer esto para saber qué sigue)
 ```
 
@@ -88,7 +100,7 @@ ROADMAP.md                ← hoja de ruta detallada por etapas (leer esto para 
 ## Qué está hecho
 
 1. **Frontend completo**: Dashboard (stats cards + cola/detalle de traslados en patrón master-detail, sin scroll de página — solo internal scroll donde hace falta), Pacientes (listado + filtros + edición), modo claro/oscuro con persistencia en `localStorage`, look redondeado tipo SaaS (logo con gradiente azul→cian→verde).
-2. **Modo mobile**: un solo breakpoint (`@media max-width: 768px` en `global.css`) convierte el sidebar en un drawer deslizable (`components/layout/AppShell.tsx` maneja el estado de apertura, con backdrop y cierre automático al navegar) y apila todos los paneles lado-a-lado (Dashboard, filtros de Pacientes/Traslados, filas de modal, Ajustes). El calendario semanal ya tenía scroll horizontal propio; se le sumó soporte de tap (no solo hover) para el popover de info del paciente, ya que en touch no hay hover.
+2. **Modo mobile**: un solo breakpoint (`@media max-width: 768px` en `global.css`) convierte el sidebar en un drawer deslizable (`components/layout/AppShell/AppShell.tsx` maneja el estado de apertura, con backdrop y cierre automático al navegar) y apila todos los paneles lado-a-lado (Dashboard, filtros de Pacientes/Traslados, filas de modal, Ajustes). El calendario semanal ya tenía scroll horizontal propio; se le sumó soporte de tap (no solo hover) para el popover de info del paciente, ya que en touch no hay hover.
 3. **Modelo de datos simplificado**: un traslado tiene **un solo horario de turno** (no hora de salida + hora de vuelta por separado — se simplificó explícitamente porque confundía), un solo `estado` general (no un estado separado para ida y para vuelta), pero sí mantiene chofer de ida y chofer de vuelta como conceptos separados.
 4. **Base de datos real**: Prisma + Supabase Postgres, con schema, migración inicial y seed corriendo contra la base real (no local).
 5. **Auth real**: login con email/password, roles ADMIN/RECEPCIONISTA/CHOFER en la sesión, rutas protegidas por `proxy.ts`.
