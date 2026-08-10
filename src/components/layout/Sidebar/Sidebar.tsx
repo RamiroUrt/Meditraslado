@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Truck, Users, History, Settings, CalendarDays, X } from "lucide-react";
+import { LayoutDashboard, Truck, Users, History, Settings, CalendarDays, FileBarChart, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useFotoPerfil } from "@/lib/useFotoPerfil";
 import type { SidebarProps } from "@/types/layout";
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
     rolesPermitidos: ["ADMIN", "RECEPCIONISTA", "CHOFER"],
   },
   { href: "/history", label: "Historial", icon: History, rolesPermitidos: ["ADMIN", "RECEPCIONISTA"] },
+  { href: "/reports", label: "Reportes", icon: FileBarChart, rolesPermitidos: ["ADMIN", "RECEPCIONISTA"] },
   { href: "/settings", label: "Ajustes", icon: Settings },
 ];
 

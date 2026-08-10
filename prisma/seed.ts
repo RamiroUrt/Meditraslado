@@ -78,11 +78,11 @@ async function main() {
   });
 
   const choferesDef = [
-    { email: "carlos.mendez@meditraslado.com", nombre: "Carlos Méndez" },
-    { email: "roberto.s@meditraslado.com", nombre: "Roberto S." },
-    { email: "diego.fernandez@meditraslado.com", nombre: "Diego Fernández" },
-    { email: "alejandro.paz@meditraslado.com", nombre: "Alejandro Paz" },
-    { email: "walter.gimenez@meditraslado.com", nombre: "Walter Giménez" },
+    { email: "carlos.mendez@meditraslado.com", nombre: "Carlos Méndez", telefono: "+5493462555011" },
+    { email: "roberto.s@meditraslado.com", nombre: "Roberto S.", telefono: "+5493462555012" },
+    { email: "diego.fernandez@meditraslado.com", nombre: "Diego Fernández", telefono: "+5493462555013" },
+    { email: "alejandro.paz@meditraslado.com", nombre: "Alejandro Paz", telefono: "+5493462555014" },
+    { email: "walter.gimenez@meditraslado.com", nombre: "Walter Giménez", telefono: "+5493462555015" },
   ];
 
   const choferes: Chofer[] = [];
@@ -90,7 +90,9 @@ async function main() {
     const usuario = await prisma.usuario.create({
       data: { email: c.email, password, nombre: c.nombre, rol: Role.CHOFER },
     });
-    const chofer = await prisma.chofer.create({ data: { usuarioId: usuario.id } });
+    const chofer = await prisma.chofer.create({
+      data: { usuarioId: usuario.id, telefonoAlternativo: c.telefono },
+    });
     choferes.push(chofer);
   }
 

@@ -19,7 +19,15 @@ function rangoHoy() {
   return { inicio, fin };
 }
 
-export async function GET() {
+function rangoPorParametros(desde?: string | null, hasta?: string | null) {
+  if (!desde || !hasta) return rangoHoy();
+  const inicio = new Date(`${desde}T00:00:00.000Z`);
+  const fin = new Date(`${hasta}T00:00:00.000Z`);
+  fin.setUTCDate(fin.getUTCDate() + 1);
+  return { inicio, fin };
+}
+
+export async function GET(request: Request) {
   const user = await requireSessionUser();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
@@ -27,13 +35,19 @@ export async function GET() {
     await generarTrasladosDelDia();
     await expirarTrasladosVencidos();
 
-    const { inicio, fin } = rangoHoy();
+    const { searchParams } = new URL(request.url);
+    const { inicio, fin } = rangoPorParametros(searchParams.get("desde"), searchParams.get("hasta"));
+
     const scopedCentroId = user.rol === "RECEPCIONISTA" ? user.centroId : null;
+    const scopedChoferId = user.rol === "CHOFER" ? user.choferId : null;
 
     const rows = await prisma.traslado.findMany({
       where: {
         fecha: { gte: inicio, lt: fin },
         ...(scopedCentroId ? { centroDestinoId: scopedCentroId } : {}),
+        ...(scopedChoferId
+          ? { OR: [{ choferId: scopedChoferId }, { choferRegresoId: scopedChoferId }] }
+          : {}),
       },
       orderBy: { horaCita: "asc" },
       include: {

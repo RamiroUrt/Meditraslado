@@ -2,52 +2,11 @@
 
 import { useState, type MouseEvent } from "react";
 import { MapPin, Phone, Car, Building2, AlertTriangle, LogIn, LogOut } from "lucide-react";
+import { DIAS, DIA_LABEL, SLOTS, slotDe, sumarMinutos } from "@/lib/calendario";
 import type { DiaSemana } from "@/types/models";
 import type { CeldaItem, HoverInfo, Tramo, WeeklyScheduleGridProps } from "@/types/calendar";
 
-const START_HOUR = 7;
-const END_HOUR = 20;
 const POPOVER_WIDTH = 260;
-
-const DIAS: DiaSemana[] = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"];
-
-const DIA_LABEL: Record<DiaSemana, string> = {
-  LUNES: "Lunes",
-  MARTES: "Martes",
-  MIERCOLES: "Miércoles",
-  JUEVES: "Jueves",
-  VIERNES: "Viernes",
-  SABADO: "Sábado",
-  DOMINGO: "Domingo",
-};
-
-function generarSlots() {
-  const slots: string[] = [];
-  for (let h = START_HOUR; h < END_HOUR; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    }
-  }
-  return slots;
-}
-
-const SLOTS = generarSlots();
-
-function slotDe(horaCita: string) {
-  const [h, m] = horaCita.split(":").map(Number);
-  const totalMin = Math.floor((h * 60 + m) / 15) * 15;
-  const sh = Math.floor(totalMin / 60);
-  const sm = totalMin % 60;
-  return `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
-}
-
-function sumarMinutos(horaCita: string, minutos: number) {
-  const [h, m] = horaCita.split(":").map(Number);
-  const total = h * 60 + m + minutos;
-  const sh = Math.floor(total / 60);
-  const sm = total % 60;
-  return `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
-}
 
 function abreviarCentro(nombre: string) {
   const palabras = nombre.trim().split(/\s+/);

@@ -56,7 +56,9 @@ src/
       pacientes/route.ts (GET/POST) + [id]/route.ts (PATCH/DELETE)
       traslados/route.ts (GET/POST) + [id]/route.ts (PATCH)
       centros/route.ts, choferes/route.ts, eventos/route.ts (GET)
-      whatsapp/send/route.ts (POST), whatsapp/webhook/route.ts (GET verificación, POST respuestas)
+      whatsapp/send/route.ts (POST), whatsapp/webhook/route.ts (GET verificación, POST respuestas),
+      whatsapp/choferes/route.ts (POST ruta del día), cron/recordatorios/route.ts (GET/POST, requiere CRON_SECRET),
+      reportes/route.ts (GET con filtros tipo/desde/hasta/centro)
 
   proxy.ts                  ← reemplaza middleware.ts (Next 16 lo renombró) — Next.js exige que esté en la raíz de src/, protege rutas y redirige a /login
 
@@ -65,7 +67,7 @@ src/
     prisma.ts               ← singleton de PrismaClient (driver adapter @prisma/adapter-pg)
     session.ts              ← requireSessionUser() para las API routes
     api-client.ts           ← fetch wrappers tipados que usa el frontend
-    traslados.ts, eventos.ts, whatsapp.ts, useFotoPerfil.ts
+    traslados.ts, eventos.ts, whatsapp.ts, notificaciones.ts, useFotoPerfil.ts
 
   providers/
     AppProviders.tsx        ← envuelve <SessionProvider> (y futuros providers)
@@ -105,12 +107,17 @@ ROADMAP.md                ← hoja de ruta detallada por etapas (leer esto para 
 5. **Auth real**: login con email/password, roles ADMIN/RECEPCIONISTA/CHOFER en la sesión, rutas protegidas por `proxy.ts`.
 6. **Frontend conectado a la API real**: Dashboard y Pacientes ya no usan mock data — leen y escriben contra Supabase vía las API routes. Verificado que las ediciones persisten tras recargar la página.
 7. **Stats cards**: Confirmados / Pendientes / Cancelados / Expirados / Pacientes activos — con la card de Pacientes destacada en grande y las otras 4 en chico a la derecha.
+8. **Lógica de negocio**: generación automática de traslados del día (idempotente, corre en cada `GET /api/traslados`), expiración automática de pendientes vencidos y cancelación independiente por tramo (ida/vuelta).
+9. **Historial del sistema**: modelo `Evento` + panel en Dashboard (hoy) y página `/history` (filtro Solo hoy / Todo), registrando cada mutación.
+10. **WhatsApp**: `POST /api/whatsapp/send` (plantilla `recordatorio_traslado` + texto libre) conectado al `WhatsAppModal`, y webhook `POST/GET /api/whatsapp/webhook` que recibe confirmaciones/cancelaciones de pacientes (verificación de firma HMAC).
+11. **Reportes / exportación**: página `/reports` (Admin/Recepción) con filtros por tipo/rango/centro, preview en tabla y exportación a **Excel (.csv)** y **PDF** (impresión).
+12. **Notificaciones automáticas**: `lib/notificaciones.ts` con ruta del día para choferes (botón "Enviar ruta a choferes" en `/transfers`) y recordatorios por cron (`POST/GET /api/cron/recordatorios`, protegido con `CRON_SECRET`).
 
 ## Qué falta (ver `ROADMAP.md` para el detalle completo)
 
-- **Lógica de negocio** (Etapa 1, paso 5): generación automática de traslados diarios a partir del horario semanal del paciente, expiración automática, cancelación por tramo.
-- **WhatsApp real** (Etapa 2): hoy el modal de WhatsApp arma el mensaje y "simula" el envío — falta integrar Meta Cloud API de verdad (enviar, webhook de respuestas, cron de recordatorios).
-- Reportes/exportación, multi-tenant — futuro lejano (Etapas 3-4).
+- **Prueba end-to-end con Meta real**: la integración de WhatsApp está escrita y probada con payloads simulados — falta conectarla contra la cuenta real (ngrok + webhook) y que Meta apruebe la plantilla.
+- **Scheduler en producción**: el endpoint de recordatorios (`/api/cron/recordatorios`) está listo, pero necesita un cron real (Vercel Cron, GitHub Actions, etc.) una vez que la app esté deployada.
+- **Multi-tenant** (Etapa 4): multi-organización, planes y facturación — futuro lejano.
 
 ---
 

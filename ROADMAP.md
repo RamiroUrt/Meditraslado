@@ -70,18 +70,18 @@ Frontend completo y pulido (Dashboard, Pacientes, Traslados, Calendario semanal,
 - [x] `POST /api/whatsapp/send` — envía la plantilla "recordatorio" (requiere aprobación de Meta) o texto libre para el resto (`lib/whatsapp.ts`), conectado al botón real de `WhatsAppModal.tsx` (ya no simula)
 - [x] `POST /api/whatsapp/webhook` — recibe respuestas del paciente, verifica firma `X-Hub-Signature-256` (rechaza con 401 si no coincide), handshake de verificación por `GET`
 - [x] Parsing de respuestas ("si"/"no"/"1"/"2"/etc.) → matchea por teléfono + traslado del día → actualiza `estado` automáticamente + registra `Evento` + responde acuse por texto libre. Verificado con payloads simulados (formato real de Meta, firma HMAC calculada a mano) contra la base real — falta la prueba end-to-end con Meta real + ngrok
-- [ ] Cron de envío automático (recordatorio día anterior / mismo día) — bloqueado hasta que la app esté deployada en algún hosting (no tiene sentido armar un scheduler sin dónde dispararlo)
-- [ ] Notificación a choferes con su ruta del día
+- [x] Cron de envío automático (recordatorio día anterior / mismo día): lógica `enviarRecordatoriosAutomaticos` (`lib/notificaciones.ts`, plantilla `recordatorio_traslado`, idempotente vía Evento) + endpoint `POST/GET /api/cron/recordatorios` protegido con `CRON_SECRET` en .env — listo para conectar a cualquier scheduler (Vercel Cron, GitHub Actions, etc.) cuando la app esté deployada
+- [x] Notificación a choferes con su ruta del día: `notificarRutasChoferes` (`lib/notificaciones.ts`) agrupa los traslados del día por chofer (ida/vuelta) y envía la ruta por WhatsApp (usa `Chofer.telefonoAlternativo`, poblado en el seed); disparada desde el botón "Enviar ruta a choferes" en `/transfers` (`POST /api/whatsapp/choferes`)
 
 ---
 
 ## Etapa 3 — Reportes y Panel Chofer
 
-- [x] Vista simplificada para choferes: reutiliza `/calendar` (`WeeklyScheduleGrid`) filtrado por `Paciente.choferAsignado`/`choferVuelta`, sin selector de centro, solo lectura (sin cancelar/reactivar tramo — se dejó explícitamente para más adelante)
+- [x] Vista del chofer con traslados reales de la semana (solo lectura): `ChoferWeekGrid` (`/calendar` en rol CHOFER) muestra los `Traslado` reales LUN–DOM con su fecha, marcas "Entrada"/"Salida" y estado; el chofer no puede cancelar/reactivar tramos (la ruta del día llega por WhatsApp). `GET /api/traslados` acepta `desde`/`hasta` y se escopa automáticamente por chofer; `PATCH /api/traslados/[id]` restringe a choferes (403 si el traslado no es suyo)
 - [x] Entrada/salida diferenciadas en el calendario del chofer: `Paciente` ahora tiene `choferVuelta` (puede ser distinto al chofer de ida) y `duracionEstimadaMin` (default 45) — la grilla muestra una marca "Entrada" en la hora de turno y una "Salida" en turno + duración, cada una solo si ese chofer corresponde a ese tramo
 - [x] Restricción de página por rol para CHOFER (Dashboard/Traslados/Pacientes/Historial bloqueados, solo Calendario + Ajustes)
 - [x] Eliminar pacientes — privilegio exclusivo de ADMIN: `DELETE /api/pacientes/[id]` (403 para otros roles), botón "Eliminar" solo visible para admin en `/patients` con modal de confirmación; borra en cascada horarios/citas/traslados del paciente antes de eliminarlo (los eventos de historial quedan, con `pacienteId` en null)
-- [ ] Reportes / exportación (Excel, PDF)
+- [x] Reportes / exportación: página `/reports` (Admin/Recepción, entrada en el Sidebar) con filtros por tipo (Traslados / Pacientes / Carga por chofer / **Historial-auditoría**), rango de fechas y centro, y barra de resumen con totales (por estado en Traslados, por chofer en Carga, por usuario en Historial, activos/inactivos en Pacientes). `GET /api/reportes` devuelve filas planas; el frontend exporta a **Excel (.csv con BOM, separador `;`)** y a **PDF** (vista de impresión con `window.print()` + estilos `@media print` en `global.css`)
 
 ## Etapa 4 — SaaS Multi-tenant (futuro)
 

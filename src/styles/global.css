@@ -1549,6 +1549,36 @@ button {
   padding: 6px 14px;
 }
 
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-green);
+  background: rgba(16, 232, 122, 0.1);
+  border: 1px solid rgba(16, 232, 122, 0.2);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  flex-shrink: 0;
+}
+
+.live-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px rgba(16, 232, 122, 0.15);
+  animation: pulse 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.live-badge-time {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 .week-grid-wrap {
   flex: 1;
   min-height: 0;
@@ -1689,6 +1719,51 @@ button {
   border-top: 1px solid var(--border);
   padding-top: 6px;
   margin-top: 2px;
+}
+
+/* ===== Grilla del chofer (traslados reales de la semana) ===== */
+.week-grid-day-fecha {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.week-grid-patient--cancelada {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.week-grid-popover--interactive {
+  pointer-events: auto;
+}
+
+.week-grid-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.week-grid-popover-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.week-grid-popover-close:hover {
+  color: var(--text-primary);
+}
+
+.week-grid-popover-tramo-cancelada {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--state-cancelled);
 }
 
 /* ===== Patients page ===== */
@@ -2072,6 +2147,232 @@ button {
   font-size: 13.5px;
   line-height: 1.5;
   margin-bottom: 16px;
+}
+
+/* ===== Reportes ===== */
+.reports-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reports-feedback {
+  font-size: 12px;
+  color: var(--state-confirmed);
+  max-width: 260px;
+  text-align: right;
+}
+
+.reports-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.reports-filters > .form-input,
+.reports-filter-field .form-input {
+  width: auto;
+  font-size: 12px;
+  padding: 8px 11px;
+}
+
+.reports-tipo-select {
+  min-width: 175px;
+}
+
+.reports-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reports-filter-field .form-input {
+  min-width: 140px;
+}
+
+.reports-preview {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+  max-height: 65vh;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.reports-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.reports-table tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+
+.reports-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.reports-table .badge {
+  font-size: 10px;
+  padding: 3px 8px;
+}
+
+.reports-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.report-summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+}
+
+.report-summary-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.report-summary-count {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.report-summary-item--pendiente {
+  color: var(--state-pending);
+}
+
+.report-summary-item--confirmado {
+  color: var(--state-confirmed);
+}
+
+.report-summary-item--cancelado {
+  color: var(--state-cancelled);
+}
+
+.report-summary-item--expirado {
+  color: var(--state-expired);
+}
+
+.report-summary-item--activo {
+  color: var(--accent-green);
+}
+
+.report-summary-item--inactivo {
+  color: var(--text-muted);
+}
+
+.report-summary-item--neutral {
+  color: var(--accent-blue);
+}
+
+/* ===== Impresión (PDF) ===== */
+.report-print {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .sidebar,
+  .header,
+  .sidebar-backdrop,
+  .sidebar-close-btn {
+    display: none !important;
+  }
+
+  .app-shell,
+  .app-main {
+    display: block !important;
+    height: auto !important;
+  }
+
+  .app-content {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .report-print,
+  .report-print * {
+    visibility: visible;
+  }
+
+  .report-print {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    color: #000;
+  }
+
+  .report-print-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .report-print table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+
+  .report-print th,
+  .report-print td {
+    border: 1px solid #999;
+    padding: 4px 6px;
+    text-align: left;
+  }
+
+  .report-print th {
+    background: #eee;
+    font-weight: 600;
+  }
 }
 
 .login-card .btn {

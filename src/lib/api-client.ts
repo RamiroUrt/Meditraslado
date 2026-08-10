@@ -71,8 +71,12 @@ export async function deletePaciente(id: string): Promise<void> {
   await parseOrThrow<{ ok: true }>(res);
 }
 
-export async function fetchTraslados(): Promise<Traslado[]> {
-  const res = await fetch("/api/traslados");
+export async function fetchTraslados(desde?: string, hasta?: string): Promise<Traslado[]> {
+  const params = new URLSearchParams();
+  if (desde) params.set("desde", desde);
+  if (hasta) params.set("hasta", hasta);
+  const query = params.toString();
+  const res = await fetch(`/api/traslados${query ? `?${query}` : ""}`);
   const data = await parseOrThrow<{ traslados: Traslado[] }>(res);
   return data.traslados;
 }

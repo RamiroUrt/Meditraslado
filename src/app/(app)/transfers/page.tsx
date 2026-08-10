@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Pencil, MessageCircle } from "lucide-react";
+import { ArrowRight, Pencil, MessageCircle, Send } from "lucide-react";
 import Badge from "@/components/ui/Badge/Badge";
 import Button from "@/components/ui/Button/Button";
 import TrasladoModal from "@/components/modals/TrasladoModal/TrasladoModal";
@@ -28,6 +28,26 @@ export default function TransfersPage() {
 
   const [editingTraslado, setEditingTraslado] = useState<Traslado | null>(null);
   const [whatsappPaciente, setWhatsappPaciente] = useState<Paciente | null>(null);
+  const [enviandoRutas, setEnviandoRutas] = useState(false);
+  const [rutasFeedback, setRutasFeedback] = useState<string | null>(null);
+
+  async function handleEnviarRutas() {
+    setEnviandoRutas(true);
+    setRutasFeedback(null);
+    try {
+      const res = await fetch("/api/whatsapp/choferes", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "No se pudieron enviar las rutas");
+      const partes = [`Enviado a ${data.enviados.length} chofer${data.enviados.length === 1 ? "" : "es"}`];
+      if (data.sinTelefono.length > 0) partes.push(`${data.sinTelefono.length} sin teléfono cargado`);
+      if (data.errores.length > 0) partes.push(`${data.errores.length} con error`);
+      setRutasFeedback(partes.join(" · "));
+    } catch (e) {
+      setRutasFeedback(e instanceof Error ? e.message : "No se pudieron enviar las rutas");
+    } finally {
+      setEnviandoRutas(false);
+    }
+  }
 
   useEffect(() => {
     Promise.all([fetchTraslados(), fetchPacientes()])
@@ -65,6 +85,18 @@ export default function TransfersPage() {
         <div>
           <h1 className="patients-title">Traslados</h1>
           <span className="patients-count">{trasladosActualizados.length} en cola</span>
+        </div>
+
+        <div className="patients-filters">
+          {rutasFeedback && <span className="reports-feedback">{rutasFeedback}</span>}
+          <Button
+            variant="whatsapp"
+            icon={<Send size={13} />}
+            loading={enviandoRutas}
+            onClick={handleEnviarRutas}
+          >
+            {enviandoRutas ? "Enviando..." : "Enviar ruta a choferes"}
+          </Button>
         </div>
       </div>
 

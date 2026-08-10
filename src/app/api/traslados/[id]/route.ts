@@ -34,6 +34,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body: PatchBody = await request.json();
 
     const actual = await prisma.traslado.findUniqueOrThrow({ where: { id } });
+
+    if (user.rol === "CHOFER") {
+      const esChoferDelTraslado =
+        actual.choferId === user.choferId || actual.choferRegresoId === user.choferId;
+      if (!esChoferDelTraslado) {
+        return NextResponse.json({ error: "No autorizado para este traslado" }, { status: 403 });
+      }
+      if (Object.keys(body).some((k) => k !== "idaCancelada" && k !== "vueltaCancelada")) {
+        return NextResponse.json(
+          { error: "Los choferes solo pueden cancelar o reactivar sus tramos" },
+          { status: 403 },
+        );
+      }
+    }
+
     const idaCancelada = body.idaCancelada ?? actual.idaCancelada;
     const vueltaCancelada = body.vueltaCancelada ?? actual.vueltaCancelada;
 
